@@ -114,7 +114,7 @@ function initializeScene1(data, colorScale) {
         showScene("#scene2", () => initializeScene2Transition(data, colorScale))
       );
     }
-  }, 100);
+  }, 500);
 }
 
 function initializeScene2(data, colorScale) {
@@ -207,7 +207,7 @@ function initializeScene2Transition(data, colorScale) {
     } else {
       clearInterval(interval);
     }
-  }, 100);
+  }, 500);
 }
 
 function initializeScene3(rhpiData, rpdiData, colorScale) {
