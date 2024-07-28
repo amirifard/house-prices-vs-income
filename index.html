@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House Prices vs Average Income</title>
-    <link rel="stylesheet" href="style.css">
+    <title>House Price Narrative Visualization</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        /* Add your CSS styles here */
+        .scene { display: none; }
+        .scene.active { display: block; }
+    </style>
 </head>
 <body>
-    <div id="visualization"></div>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <div id="scene1" class="scene active"></div>
+    <div id="scene2" class="scene"></div>
+    <div id="scene3" class="scene"></div>
     <script src="script.js"></script>
 </body>
 </html>
