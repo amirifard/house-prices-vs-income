@@ -231,15 +231,19 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
       .attr("min", 0)
       .attr("max", rhpiData.length - 1)
       .attr("value", rhpiData.length - 1)
-      .attr("disabled", true)
       .style("width", "80%")
-      .style("margin", "20px");
+      .style("margin", "20px")
+      .on("input", function() {
+        updateScatterPlot(+this.value);
+      });
   
     const data = rhpiData.map((d, i) => ({
-      country: d.country,
-      RHPI: d.value,
-      RPDI: rpdiData[i].value,
-      quarter: d.quarter,
+      quarter: d[0].quarter,
+      values: d.map((countryData, j) => ({
+        country: countryData.country,
+        RHPI: countryData.value,
+        RPDI: rpdiData[i][j].value,
+      })),
     }));
   
     const x = d3.scaleLinear().range([0, width]);
@@ -247,14 +251,12 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
     const y = d3.scaleLinear().range([height, 0]);
   
     const updateScatterPlot = (index) => {
-      const currentData = data.filter(
-        (d) => d.quarter === rhpiData[index][0].quarter
-      );
+      const currentData = data[index].values;
   
       x.domain([0, d3.max(currentData, (d) => d.RHPI)]);
       y.domain([0, d3.max(currentData, (d) => d.RPDI)]);
   
-      circles = g.selectAll(".circle").data(currentData, (d) => d.country);
+      const circles = g.selectAll(".circle").data(currentData, (d) => d.country);
       circles
         .enter()
         .append("circle")
@@ -275,8 +277,6 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
   
       g.select(".x.axis").call(d3.axisBottom(x));
       g.select(".y.axis").call(d3.axisLeft(y));
-  
-      timeline.property("value", index);
     };
   
     g.append("g")
@@ -285,17 +285,7 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
   
     g.append("g").attr("class", "y axis");
   
-    let index = rhpiData.length - 1;
-    const interval = setInterval(() => {
-      if (index >= 0) {
-        updateScatterPlot(index);
-        index--;
-      } else {
-        clearInterval(interval);
-      }
-    }, 100);
-  
-    d3.select("#start-over").on("click", () => showScene("#scene1"));
+    updateScatterPlot(rhpiData.length - 1);
   }
   
   function showScene(sceneId, callback) {
