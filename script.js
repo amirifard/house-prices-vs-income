@@ -16,7 +16,9 @@ d3.csv('RHPI.csv').then(dataRHPI => {
 });
 
 function initializeScene1(data) {
-    const svg = d3.select("#scene1").append("svg");
+    const svg = d3.select("#scene1").append("svg")
+                  .attr("width", 800)
+                  .attr("height", 600);
     const margin = {top: 20, right: 30, bottom: 40, left: 90},
           width = 800 - margin.left - margin.right,
           height = 600 - margin.top - margin.bottom;
@@ -64,7 +66,9 @@ function initializeScene1(data) {
 }
 
 function initializeScene2(data) {
-    const svg = d3.select("#scene2").append("svg");
+    const svg = d3.select("#scene2").append("svg")
+                  .attr("width", 800)
+                  .attr("height", 600);
     const margin = {top: 20, right: 30, bottom: 40, left: 90},
           width = 800 - margin.left - margin.right,
           height = 600 - margin.top - margin.bottom;
@@ -112,7 +116,9 @@ function initializeScene2(data) {
 }
 
 function initializeScene3(rhpiData, rpdiData) {
-    const svg = d3.select("#scene3").append("svg");
+    const svg = d3.select("#scene3").append("svg")
+                  .attr("width", 800)
+                  .attr("height", 600);
     const margin = {top: 20, right: 30, bottom: 40, left: 90},
           width = 800 - margin.left - margin.right,
           height = 600 - margin.top - margin.bottom;
