@@ -54,7 +54,6 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
         "#7af5be",
       ])
       .domain(countries);
-    //console.log(d3.schemeCategory10, countries, colorScale)
 
     initializeScene1(rhpiData, colorScale, rpdiData);
     initializeScene2(rpdiData, colorScale);
@@ -145,6 +144,13 @@ function initializeScene1(data, colorScale, data2) {
     .attr("text-anchor", "middle")
     .style("font-size", "16px");
 
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "20px")
+    .text("Scene 1: Real House Price Index (RHPI)");
+
   let index = 0;
   const interval = setInterval(() => {
     if (index < data.length) {
@@ -157,7 +163,6 @@ function initializeScene1(data, colorScale, data2) {
 
   d3.select("#next1").on("click", () =>
     showScene("#scene2", () => {
-      //initializeScene2(data2, colorScale);
       initializeScene2Transition(data2, colorScale);
     })
   );
@@ -247,6 +252,13 @@ function initializeScene2(data, colorScale) {
     .attr("text-anchor", "middle")
     .style("font-size", "16px");
 
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "20px")
+    .text("Scene 2: Real Personal Disposable Income (RPDI)");
+
   let index = 0;
   const interval = setInterval(() => {
     if (index < data.length) {
@@ -261,7 +273,6 @@ function initializeScene2(data, colorScale) {
 }
 
 function initializeScene2Transition(data, colorScale) {
-  //console.log("scene2 trans", data)
   const svg = d3.select("#scene2 svg");
   const margin = { top: 20, right: 30, bottom: 60, left: 90 },
     width = 800 - margin.left - margin.right,
@@ -270,7 +281,6 @@ function initializeScene2Transition(data, colorScale) {
   const g = svg.select("g");
 
   const x = d3.scaleLinear().range([0, width]);
-
   const y = d3.scaleBand().range([0, height]).padding(0.1);
 
   const updateChart = (quarterData, index) => {
@@ -404,6 +414,7 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
 
   const updateScatterPlot = (index) => {
     const currentData = data[index].values;
+
     const circles = g.selectAll(".circle").data(currentData, (d) => d.country);
     circles
       .enter()
@@ -423,6 +434,24 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
 
     circles.exit().remove();
 
+    // Add tooltips
+    circles.on("mouseover", (event, d) => {
+      const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("background", "#f9f9f9")
+        .style("padding", "5px")
+        .style("border", "1px solid #d3d3d3")
+        .style("border-radius", "3px")
+        .style("pointer-events", "none")
+        .style("left", `${event.pageX + 5}px`)
+        .style("top", `${event.pageY - 28}px`)
+        .html(`Country: ${d.country}<br>RHPI: ${d.RHPI}<br>RPDI: ${d.RPDI}`);
+    })
+    .on("mouseout", () => {
+      d3.selectAll(".tooltip").remove();
+    });
+
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
   };
@@ -433,11 +462,18 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
 
   g.append("g").attr("class", "y axis");
 
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "20px")
+    .text("Scene 3: RHPI vs RPDI Scatter Plot");
+
   updateScatterPlot(rhpiData.length - 1);
 
   d3.select("#start-over").on("click", () => {
     d3.selectAll("svg").remove();
-    d3.selectAll(".timeline-container").remove();
+    d3.selectAll(".slider-container").remove();
     showScene("#scene1", () => {
       initializeScene1(rhpiData, colorScale, rpdiData);
       initializeScene2(rpdiData, colorScale);
@@ -451,3 +487,4 @@ function showScene(sceneId, callback) {
   d3.select(sceneId).classed("active", true);
   if (callback) callback();
 }
+
