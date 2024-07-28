@@ -24,15 +24,45 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
     const countries = Object.keys(dataRHPI[0]).filter(
       (key) => key !== "Quarter"
     );
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(countries);
+    const colorScale = d3
+      .scaleOrdinal([
+        "#f57a7a",
+        "#7af5be",
+        "#7abcf5",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#d07af5",
+        "#d07af5",
+        "#7af5be",
+        "#7af5be",
+        "#7af5be",
+        "#f57a7a",
+        "#7af5be",
+        "#7abcf5",
+        "#f5c67a",
+        "#7af5be",
+        "#f5c67a",
+        "#7af5be",
+        "#7abcf5",
+        "#7af5be",
+      ])
+      .domain(countries);
+    //console.log(d3.schemeCategory10, countries, colorScale)
 
-    initializeScene1(rhpiData, colorScale);
+    initializeScene1(rhpiData, colorScale, rpdiData);
     initializeScene2(rpdiData, colorScale);
     initializeScene3(rhpiData, rpdiData, colorScale);
   });
 });
 
-function initializeScene1(data, colorScale) {
+function initializeScene1(data, colorScale, data2) {
   const svg = d3
     .select("#scene1")
     .append("svg")
@@ -47,16 +77,14 @@ function initializeScene1(data, colorScale) {
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
   const x = d3.scaleLinear().range([0, width]);
-
   const y = d3.scaleBand().range([0, height]).padding(0.1);
-
   const quarters = data.map((d) => d[0].quarter);
 
   const updateChart = (quarterData, index) => {
     quarterData.sort((a, b) => a.value - b.value);
 
-    x.domain([0, d3.max(quarterData, (d) => d.value)]);
-    y.domain(quarterData.map((d) => d.country));
+    x.domain([0, d3.max(data.flat(), (d) => d.value)]);
+    y.domain(d3.range(1, quarterData.length + 1));
 
     const bars = g.selectAll(".bar").data(quarterData, (d) => d.country);
 
@@ -65,24 +93,42 @@ function initializeScene1(data, colorScale) {
       .append("rect")
       .attr("class", "bar")
       .attr("x", x(0))
-      .attr("y", (d) => y(d.country))
+      .attr("y", (d, i) => y(i + 1))
       .attr("width", (d) => x(d.value))
       .attr("height", y.bandwidth())
       .attr("fill", (d) => colorScale(d.country))
       .merge(bars)
       .transition()
-      .duration(100)
+      .duration(250)
       .attr("x", x(0))
-      .attr("y", (d) => y(d.country))
+      .attr("y", (d, i) => y(i + 1))
       .attr("width", (d) => x(d.value))
       .attr("height", y.bandwidth())
       .attr("fill", (d) => colorScale(d.country));
 
     bars.exit().remove();
 
-    g.select(".x.axis").call(d3.axisBottom(x));
-    g.select(".y.axis").call(d3.axisLeft(y));
+    const labels = g.selectAll(".label").data(quarterData, (d) => d.country);
 
+    labels
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .attr("dy", ".35em")
+      .text((d) => d.country)
+      .merge(labels)
+      .transition()
+      .duration(250)
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .text((d) => d.country);
+
+    labels.exit().remove();
+
+    g.select(".x.axis").call(d3.axisBottom(x));
+    g.select(".y.axis").call(d3.axisLeft(y).tickFormat((d) => `${d}`));
     d3.select("#quarter1").text(`${quarters[index]}`);
   };
 
@@ -106,11 +152,15 @@ function initializeScene1(data, colorScale) {
       index++;
     } else {
       clearInterval(interval);
-      d3.select("#next1").on("click", () =>
-        showScene("#scene2", () => initializeScene2Transition(data, colorScale))
-      );
     }
-  }, 100);
+  }, 250);
+
+  d3.select("#next1").on("click", () =>
+    showScene("#scene2", () => {
+      //initializeScene2(data2, colorScale);
+      initializeScene2Transition(data2, colorScale);
+    })
+  );
 }
 
 function initializeScene2(data, colorScale) {
@@ -127,6 +177,63 @@ function initializeScene2(data, colorScale) {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
+  const x = d3.scaleLinear().range([0, width]);
+  const y = d3.scaleBand().range([0, height]).padding(0.1);
+  const quarters = data.map((d) => d[0].quarter);
+
+  const updateChart = (quarterData, index) => {
+    quarterData.sort((a, b) => b.value - a.value);
+
+    x.domain([0, d3.max(data.flat(), (d) => d.value)]);
+    y.domain(d3.range(1, quarterData.length + 1));
+
+    const bars = g.selectAll(".bar").data(quarterData, (d) => d.country);
+
+    bars
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", x(0))
+      .attr("y", (d, i) => y(i + 1))
+      .attr("width", (d) => x(d.value))
+      .attr("height", y.bandwidth())
+      .attr("fill", (d) => colorScale(d.country))
+      .merge(bars)
+      .transition()
+      .duration(250)
+      .attr("x", x(0))
+      .attr("y", (d, i) => y(i + 1))
+      .attr("width", (d) => x(d.value))
+      .attr("height", y.bandwidth())
+      .attr("fill", (d) => colorScale(d.country));
+
+    bars.exit().remove();
+
+    const labels = g.selectAll(".label").data(quarterData, (d) => d.country);
+
+    labels
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .attr("dy", ".35em")
+      .text((d) => d.country)
+      .merge(labels)
+      .transition()
+      .duration(250)
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .text((d) => d.country);
+
+    labels.exit().remove();
+
+    g.select(".x.axis").call(d3.axisBottom(x));
+    g.select(".y.axis").call(d3.axisLeft(y).tickFormat((d) => `${d}`));
+
+    d3.select("#quarter2").text(`${quarters[index]}`);
+  };
+
   g.append("g")
     .attr("class", "x axis")
     .attr("transform", `translate(0,${height})`);
@@ -140,10 +247,21 @@ function initializeScene2(data, colorScale) {
     .attr("text-anchor", "middle")
     .style("font-size", "16px");
 
+  let index = 0;
+  const interval = setInterval(() => {
+    if (index < data.length) {
+      updateChart(data[index], index);
+      index++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 250);
+
   d3.select("#next2").on("click", () => showScene("#scene3"));
 }
 
 function initializeScene2Transition(data, colorScale) {
+  //console.log("scene2 trans", data)
   const svg = d3.select("#scene2 svg");
   const margin = { top: 20, right: 30, bottom: 60, left: 90 },
     width = 800 - margin.left - margin.right,
@@ -158,8 +276,8 @@ function initializeScene2Transition(data, colorScale) {
   const updateChart = (quarterData, index) => {
     quarterData.sort((a, b) => b.value - a.value);
 
-    x.domain([0, d3.max(quarterData, (d) => d.value)]);
-    y.domain(quarterData.map((d) => d.country));
+    x.domain([0, d3.max(data.flat(), (d) => d.value)]);
+    y.domain(d3.range(1, quarterData.length + 1));
 
     const bars = g.selectAll(".bar").data(quarterData, (d) => d.country);
 
@@ -168,23 +286,42 @@ function initializeScene2Transition(data, colorScale) {
       .append("rect")
       .attr("class", "bar")
       .attr("x", x(0))
-      .attr("y", (d) => y(d.country))
+      .attr("y", (d, i) => y(i + 1))
       .attr("width", (d) => x(d.value))
       .attr("height", y.bandwidth())
       .attr("fill", (d) => colorScale(d.country))
       .merge(bars)
       .transition()
-      .duration(100)
+      .duration(250)
       .attr("x", x(0))
-      .attr("y", (d) => y(d.country))
+      .attr("y", (d, i) => y(i + 1))
       .attr("width", (d) => x(d.value))
       .attr("height", y.bandwidth())
       .attr("fill", (d) => colorScale(d.country));
 
     bars.exit().remove();
 
+    const labels = g.selectAll(".label").data(quarterData, (d) => d.country);
+
+    labels
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .attr("dy", ".35em")
+      .text((d) => d.country)
+      .merge(labels)
+      .transition()
+      .duration(250)
+      .attr("x", (d) => x(d.value) + 5)
+      .attr("y", (d, i) => y(i + 1) + y.bandwidth() / 2)
+      .text((d) => d.country);
+
+    labels.exit().remove();
+
     g.select(".x.axis").call(d3.axisBottom(x));
-    g.select(".y.axis").call(d3.axisLeft(y));
+    g.select(".y.axis").call(d3.axisLeft(y).tickFormat((d) => `${d}`));
 
     d3.select("#quarter2").text(`${data[index][0].quarter}`);
   };
@@ -197,7 +334,9 @@ function initializeScene2Transition(data, colorScale) {
     } else {
       clearInterval(interval);
     }
-  }, 100);
+  }, 250);
+
+  d3.select("#next2").on("click", () => showScene("#scene3"));
 }
 
 function initializeScene3(rhpiData, rpdiData, colorScale) {
@@ -210,44 +349,37 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
-   const sliderContainer = d3.select("#scene3")
+  d3.select("#scene3 .slider-container").remove();
+
+  const sliderContainer = d3
+    .select("#scene3")
     .append("div")
+    .attr("class", "slider-container")
     .style("position", "relative")
     .style("width", "80%")
     .style("margin", "20px auto");
-
-    const quarterLabel = sliderContainer.append("div")
-  .style("text-align", "center")
-  .style("font-size", "16px")
-  .text(`Quarter: ${data[rhpiData.length - 1].quarter}`);
 
   const g = svg
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-//   const timeline = d3
-//     .select("#scene3")
-//     .append("input")
-//     .attr("type", "range")
-//     .attr("min", 0)
-//     .attr("max", rhpiData.length - 1)
-//     .attr("value", rhpiData.length - 1)
-//     .style("width", "80%")
-//     .style("margin", "20px")
-//     .on("input", function () {
-//       updateScatterPlot(+this.value);
-//     });
+  const quarterLabel = sliderContainer
+    .append("div")
+    .style("text-align", "center")
+    .style("font-size", "16px")
+    .text(`Quarter: ${rhpiData[rhpiData.length - 1][0].quarter}`);
 
-const timeline = sliderContainer.append("input")
-  .attr("type", "range")
-  .attr("min", 0)
-  .attr("max", rhpiData.length - 1)
-  .attr("value", rhpiData.length - 1)
-  .style("width", "100%")
-  .on("input", function () {
-    updateScatterPlot(+this.value);
-    quarterLabel.text(`Quarter: ${data[+this.value].quarter}`);
-  });
+  const timeline = sliderContainer
+    .append("input")
+    .attr("type", "range")
+    .attr("min", 0)
+    .attr("max", rhpiData.length - 1)
+    .attr("value", rhpiData.length - 1)
+    .style("width", "100%")
+    .on("input", function () {
+      updateScatterPlot(+this.value);
+      quarterLabel.text(`Quarter: ${rhpiData[+this.value][0].quarter}`);
+    });
 
   const data = rhpiData.map((d, i) => ({
     quarter: d[0].quarter,
@@ -258,15 +390,20 @@ const timeline = sliderContainer.append("input")
     })),
   }));
 
-  const x = d3.scaleLinear().range([0, width]);
+  const maxRHPI = d3.max(
+    data.flatMap((d) => d.values),
+    (d) => d.RHPI
+  );
+  const maxRPDI = d3.max(
+    data.flatMap((d) => d.values),
+    (d) => d.RPDI
+  );
 
-  const y = d3.scaleLinear().range([height, 0]);
+  const x = d3.scaleLinear().range([0, width]).domain([0, maxRHPI]);
+  const y = d3.scaleLinear().range([height, 0]).domain([0, maxRPDI]);
 
   const updateScatterPlot = (index) => {
     const currentData = data[index].values;
-    x.domain([0, d3.max(currentData, (d) => d.RHPI)]);
-    y.domain([0, d3.max(currentData, (d) => d.RPDI)]);
-
     const circles = g.selectAll(".circle").data(currentData, (d) => d.country);
     circles
       .enter()
@@ -278,7 +415,7 @@ const timeline = sliderContainer.append("input")
       .attr("fill", (d) => colorScale(d.country))
       .merge(circles)
       .transition()
-      .duration(100)
+      .duration(250)
       .attr("cx", (d) => x(d.RHPI))
       .attr("cy", (d) => y(d.RPDI))
       .attr("r", 5)
@@ -288,8 +425,6 @@ const timeline = sliderContainer.append("input")
 
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
-    // Update quarter label
-  quarterLabel.text(`${data[index].quarter}`);
   };
 
   g.append("g")
@@ -299,6 +434,16 @@ const timeline = sliderContainer.append("input")
   g.append("g").attr("class", "y axis");
 
   updateScatterPlot(rhpiData.length - 1);
+
+  d3.select("#start-over").on("click", () => {
+    d3.selectAll("svg").remove();
+    d3.selectAll(".timeline-container").remove();
+    showScene("#scene1", () => {
+      initializeScene1(rhpiData, colorScale, rpdiData);
+      initializeScene2(rpdiData, colorScale);
+      initializeScene3(rhpiData, rpdiData, colorScale);
+    });
+  });
 }
 
 function showScene(sceneId, callback) {
