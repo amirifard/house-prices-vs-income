@@ -83,7 +83,7 @@ function initializeScene1(data, colorScale) {
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
 
-    d3.select("#quarter1").text(`Quarter: ${quarters[index]}`);
+    d3.select("#quarter1").text(`${quarters[index]}`);
   };
 
   g.append("g")
@@ -186,7 +186,7 @@ function initializeScene2Transition(data, colorScale) {
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
 
-    d3.select("#quarter2").text(`Quarter: ${data[index][0].quarter}`);
+    d3.select("#quarter2").text(`${data[index][0].quarter}`);
   };
 
   let index = 0;
@@ -210,22 +210,44 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
+   const sliderContainer = d3.select("#scene3")
+    .append("div")
+    .style("position", "relative")
+    .style("width", "80%")
+    .style("margin", "20px auto");
+
+    const quarterLabel = sliderContainer.append("div")
+  .style("text-align", "center")
+  .style("font-size", "16px")
+  .text(`Quarter: ${data[rhpiData.length - 1].quarter}`);
+
   const g = svg
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const timeline = d3
-    .select("#scene3")
-    .append("input")
-    .attr("type", "range")
-    .attr("min", 0)
-    .attr("max", rhpiData.length - 1)
-    .attr("value", rhpiData.length - 1)
-    .style("width", "80%")
-    .style("margin", "20px")
-    .on("input", function () {
-      updateScatterPlot(+this.value);
-    });
+//   const timeline = d3
+//     .select("#scene3")
+//     .append("input")
+//     .attr("type", "range")
+//     .attr("min", 0)
+//     .attr("max", rhpiData.length - 1)
+//     .attr("value", rhpiData.length - 1)
+//     .style("width", "80%")
+//     .style("margin", "20px")
+//     .on("input", function () {
+//       updateScatterPlot(+this.value);
+//     });
+
+const timeline = sliderContainer.append("input")
+  .attr("type", "range")
+  .attr("min", 0)
+  .attr("max", rhpiData.length - 1)
+  .attr("value", rhpiData.length - 1)
+  .style("width", "100%")
+  .on("input", function () {
+    updateScatterPlot(+this.value);
+    quarterLabel.text(`Quarter: ${data[+this.value].quarter}`);
+  });
 
   const data = rhpiData.map((d, i) => ({
     quarter: d[0].quarter,
@@ -266,6 +288,8 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
 
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
+    // Update quarter label
+  quarterLabel.text(`${data[index].quarter}`);
   };
 
   g.append("g")
