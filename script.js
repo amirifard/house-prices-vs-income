@@ -1,17 +1,25 @@
 d3.csv('RHPI.csv').then(dataRHPI => {
     d3.csv('RPDI.csv').then(dataRPDI => {
-        // Use only the most recent quarter for each dataset
-        const latestRHPI = dataRHPI[dataRHPI.length - 1];
-        const latestRPDI = dataRPDI[dataRPDI.length - 1];
+        // Process data into arrays of objects with country and value for each quarter
+        const rhpiData = dataRHPI.map(row => {
+            return Object.keys(row).filter(key => key !== 'Quarter').map(country => ({
+                quarter: row.Quarter,
+                country: country,
+                value: +row[country]
+            }));
+        });
 
-        // Extract country names and values
-        const countries = Object.keys(latestRHPI).filter(key => key !== 'Quarter');
-        const rhpiData = countries.map(country => ({ country, value: +latestRHPI[country] }));
-        const rpdiData = countries.map(country => ({ country, value: +latestRPDI[country] }));
+        const rpdiData = dataRPDI.map(row => {
+            return Object.keys(row).filter(key => key !== 'Quarter').map(country => ({
+                quarter: row.Quarter,
+                country: country,
+                value: +row[country]
+            }));
+        });
 
         initializeScene1(rhpiData);
         initializeScene2(rpdiData);
-        initializeScene3(rhpiData, rpdiData);
+        initializeScene3(rhpiData[rhpiData.length - 1], rpdiData[rpdiData.length - 1]); // Use latest quarter for the scatter plot
     });
 });
 
@@ -26,41 +34,61 @@ function initializeScene1(data) {
     const g = svg.append("g")
                  .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    data.sort((a, b) => a.value - b.value);
-
     const x = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.value)])
                 .range([0, width]);
 
     const y = d3.scaleBand()
-                .domain(data.map(d => d.country))
                 .range([0, height])
                 .padding(0.1);
 
-    g.append("g")
-     .attr("class", "x axis")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(x));
+    const updateChart = (quarterData) => {
+        quarterData.sort((a, b) => a.value - b.value);
+
+        x.domain([0, d3.max(quarterData, d => d.value)]);
+        y.domain(quarterData.map(d => d.country));
+
+        const bars = g.selectAll(".bar")
+                      .data(quarterData, d => d.country);
+
+        bars.enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", x(0))
+            .attr("y", d => y(d.country))
+            .attr("width", d => x(d.value))
+            .attr("height", y.bandwidth())
+            .attr("fill", "steelblue")
+            .merge(bars)
+            .transition()
+            .duration(100)
+            .attr("x", x(0))
+            .attr("y", d => y(d.country))
+            .attr("width", d => x(d.value))
+            .attr("height", y.bandwidth())
+            .attr("fill", "steelblue");
+
+        bars.exit().remove();
+
+        g.select(".x.axis").call(d3.axisBottom(x));
+        g.select(".y.axis").call(d3.axisLeft(y));
+    };
 
     g.append("g")
-     .attr("class", "y axis")
-     .call(d3.axisLeft(y));
+     .attr("class", "x axis")
+     .attr("transform", `translate(0,${height})`);
+
+    g.append("g")
+     .attr("class", "y axis");
 
     let index = 0;
     const interval = setInterval(() => {
         if (index < data.length) {
-            const d = data[index];
-            g.append("rect")
-             .attr("x", x(0))
-             .attr("y", y(d.country))
-             .attr("width", x(d.value))
-             .attr("height", y.bandwidth())
-             .attr("fill", "steelblue");
+            updateChart(data[index]);
             index++;
         } else {
             clearInterval(interval);
         }
-    }, 500);
+    }, 100);
 
     d3.select("#next1").on("click", () => showScene("#scene2"));
 }
