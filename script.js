@@ -19,7 +19,7 @@ d3.csv('RHPI.csv').then(dataRHPI => {
 
         initializeScene1(rhpiData);
         initializeScene2(rpdiData);
-        initializeScene3(rhpiData[rhpiData.length - 1], rpdiData[rpdiData.length - 1]); // Use latest quarter for the scatter plot
+        initializeScene3(rhpiData, rpdiData);
     });
 });
 
@@ -87,10 +87,9 @@ function initializeScene1(data) {
             index++;
         } else {
             clearInterval(interval);
+            d3.select("#next1").on("click", () => showScene("#scene2"));
         }
     }, 100);
-
-    d3.select("#next1").on("click", () => showScene("#scene2"));
 }
 
 function initializeScene2(data) {
@@ -104,43 +103,62 @@ function initializeScene2(data) {
     const g = svg.append("g")
                  .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    data.sort((a, b) => b.value - a.value);
-
     const x = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.value)])
                 .range([0, width]);
 
     const y = d3.scaleBand()
-                .domain(data.map(d => d.country))
                 .range([0, height])
                 .padding(0.1);
 
-    g.append("g")
-     .attr("class", "x axis")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(x));
+    const updateChart = (quarterData) => {
+        quarterData.sort((a, b) => b.value - a.value);
+
+        x.domain([0, d3.max(quarterData, d => d.value)]);
+        y.domain(quarterData.map(d => d.country));
+
+        const bars = g.selectAll(".bar")
+                      .data(quarterData, d => d.country);
+
+        bars.enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", x(0))
+            .attr("y", d => y(d.country))
+            .attr("width", d => x(d.value))
+            .attr("height", y.bandwidth())
+            .attr("fill", "orange")
+            .merge(bars)
+            .transition()
+            .duration(100)
+            .attr("x", x(0))
+            .attr("y", d => y(d.country))
+            .attr("width", d => x(d.value))
+            .attr("height", y.bandwidth())
+            .attr("fill", "orange");
+
+        bars.exit().remove();
+
+        g.select(".x.axis").call(d3.axisBottom(x));
+        g.select(".y.axis").call(d3.axisLeft(y));
+    };
 
     g.append("g")
-     .attr("class", "y axis")
-     .call(d3.axisLeft(y));
+     .attr("class", "x axis")
+     .attr("transform", `translate(0,${height})`);
+
+    g.append("g")
+     .attr("class", "y axis");
 
     let index = 0;
     const interval = setInterval(() => {
         if (index < data.length) {
-            const d = data[index];
-            g.append("rect")
-             .attr("x", x(0))
-             .attr("y", y(d.country))
-             .attr("width", x(d.value))
-             .attr("height", y.bandwidth())
-             .attr("fill", "orange");
+            updateChart(data[index]);
             index++;
         } else {
             clearInterval(interval);
+            d3.select("#next2").on("click", () => showScene("#scene3"));
         }
-    }, 500);
-
-    d3.select("#next2").on("click", () => showScene("#scene3"));
+    }, 100);
 }
 
 function initializeScene3(rhpiData, rpdiData) {
@@ -154,48 +172,69 @@ function initializeScene3(rhpiData, rpdiData) {
     const g = svg.append("g")
                  .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    const timeline = d3.select("#scene3").append("input")
+                        .attr("type", "range")
+                        .attr("min", 0)
+                        .attr("max", rhpiData.length - 1)
+                        .attr("value", rhpiData.length - 1)
+                        .style("width", "80%")
+                        .style("margin", "20px");
+
     const data = rhpiData.map((d, i) => ({
         country: d.country,
         RHPI: d.value,
-        RPDI: rpdiData[i].value
+        RPDI: rpdiData[i].value,
+        quarter: d.quarter
     }));
 
     const x = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.RHPI)])
                 .range([0, width]);
 
     const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.RPDI)])
                 .range([height, 0]);
+
+    const updateScatterPlot = (index) => {
+        const currentData = data.filter(d => d.quarter === rhpiData[index][0].quarter);
+
+        x.domain([0, d3.max(currentData, d => d.RHPI)]);
+        y.domain([0, d3.max(currentData, d => d.RPDI)]);
+
+        const circles = g.selectAll(".circle")
+                         .data(currentData, d => d.country);
+
+        circles.enter()
+               .append("circle")
+               .attr("class", "circle")
+               .attr("cx", d => x(d.RHPI))
+               .attr("cy", d => y(d.RPDI))
+               .attr("r", 5)
+               .attr("fill", "green")
+               .merge(circles)
+               .transition()
+               .duration(100)
+               .attr("cx", d => x(d.RHPI))
+               .attr("cy", d => y(d.RPDI))
+               .attr("r", 5)
+               .attr("fill", "green");
+
+        circles.exit().remove();
+
+        g.select(".x.axis").call(d3.axisBottom(x));
+        g.select(".y.axis").call(d3.axisLeft(y));
+    };
 
     g.append("g")
      .attr("class", "x axis")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(x));
+     .attr("transform", `translate(0,${height})`);
 
     g.append("g")
-     .attr("class", "y axis")
-     .call(d3.axisLeft(y));
+     .attr("class", "y axis");
 
-    g.selectAll("circle")
-     .data(data)
-     .enter()
-     .append("circle")
-     .attr("cx", d => x(d.RHPI))
-     .attr("cy", d => y(d.RPDI))
-     .attr("r", 5)
-     .attr("fill", "green");
+    timeline.on("input", function() {
+        updateScatterPlot(this.value);
+    });
 
-    g.selectAll("text.label")
-     .data(data)
-     .enter()
-     .append("text")
-     .attr("x", d => x(d.RHPI))
-     .attr("y", d => y(d.RPDI))
-     .attr("dx", 7)
-     .attr("dy", -7)
-     .attr("font-size", "10px")
-     .text(d => d.country);
+    updateScatterPlot(rhpiData.length - 1);
 
     d3.select("#start-over").on("click", () => showScene("#scene1"));
 }
