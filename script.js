@@ -21,10 +21,59 @@ d3.csv("RHPI.csv").then((dataRHPI) => {
         }));
     });
 
+    const continents = {
+      Australia: "Oceania",
+      Belgium: "Europe",
+      Canada: "North America",
+      Switzerland: "Europe",
+      Germany: "Europe",
+      Denmark: "Europe",
+      Spain: "Europe",
+      Finland: "Europe",
+      France: "Europe",
+      UK: "Europe",
+      Greece: "Europe",
+      Ireland: "Europe",
+      Italy: "Europe",
+      Japan: "Asia",
+      Korea: "Asia",
+      Netherlands: "Europe",
+      Norway: "Europe",
+      "New Zealand": "Oceania",
+      Sweden: "Europe",
+      US: "North America",
+      "S. Africa": "Africa",
+      Croatia: "Europe",
+      Israel: "Asia",
+      Slovenia: "Europe",
+      Colombia: "South America",
+      Portugal: "Europe",
+    };
+
+    const continentColors = {
+      Europe: d3.schemeCategory10[0],
+      Asia: d3.schemeCategory10[1],
+      "North America": d3.schemeCategory10[2],
+      "South America": d3.schemeCategory10[3],
+      Oceania: d3.schemeCategory10[4],
+      Africa: d3.schemeCategory10[5],
+    };
+
     const countries = Object.keys(dataRHPI[0]).filter(
       (key) => key !== "Quarter"
     );
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(countries);
+    const colorScale = d3
+      .scaleOrdinal()
+      .domain(countries)
+      .range(
+        countries.map((country) => {
+          const continent = continents[country];
+          return d3.interpolateRgb(
+            continentColors[continent],
+            "#000"
+          )(Math.random() * 0.6 + 0.2);
+        })
+      );
 
     initializeScene1(rhpiData, colorScale);
     initializeScene2(rpdiData, colorScale);
@@ -38,7 +87,7 @@ function initializeScene1(data, colorScale) {
     .append("svg")
     .attr("width", 800)
     .attr("height", 600);
-  const margin = { top: 20, right: 30, bottom: 40, left: 90 },
+  const margin = { top: 20, right: 30, bottom: 70, left: 90 },
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
@@ -51,17 +100,22 @@ function initializeScene1(data, colorScale) {
   const y = d3.scaleBand().range([0, height]).padding(0.1);
 
   const timeline = d3
-    .select("#scene1")
-    .append("input")
-    .attr("type", "range")
-    .attr("min", 0)
+    .select("#timeline1")
     .attr("max", data.length - 1)
-    .attr("value", 0)
-    .attr("disabled", true)
-    .style("width", "80%")
-    .style("margin", "20px");
+    .attr("disabled", true);
 
   const quarters = data.map((d) => d[0].quarter);
+
+  // Add labels to the timeline
+  const labelContainer = d3
+    .select("#labels1")
+    .selectAll(".timeline-label")
+    .data(quarters)
+    .enter()
+    .append("div")
+    .attr("class", "timeline-label")
+    .style("left", (d, i) => `${(i / (quarters.length - 1)) * 100}%`)
+    .text((d) => d);
 
   const updateChart = (quarterData, index) => {
     quarterData.sort((a, b) => a.value - b.value);
@@ -82,7 +136,7 @@ function initializeScene1(data, colorScale) {
       .attr("fill", (d) => colorScale(d.country))
       .merge(bars)
       .transition()
-      .duration(100)
+      .duration(1000)
       .attr("x", x(0))
       .attr("y", (d) => y(d.country))
       .attr("width", (d) => x(d.value))
@@ -114,7 +168,7 @@ function initializeScene1(data, colorScale) {
         showScene("#scene2", () => initializeScene2Transition(data, colorScale))
       );
     }
-  }, 500);
+  }, 1000);
 }
 
 function initializeScene2(data, colorScale) {
@@ -123,7 +177,7 @@ function initializeScene2(data, colorScale) {
     .append("svg")
     .attr("width", 800)
     .attr("height", 600);
-  const margin = { top: 20, right: 30, bottom: 40, left: 90 },
+  const margin = { top: 20, right: 30, bottom: 70, left: 90 },
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
@@ -132,15 +186,22 @@ function initializeScene2(data, colorScale) {
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
   const timeline = d3
-    .select("#scene2")
-    .append("input")
-    .attr("type", "range")
-    .attr("min", 0)
+    .select("#timeline2")
     .attr("max", data.length - 1)
-    .attr("value", 0)
-    .attr("disabled", true)
-    .style("width", "80%")
-    .style("margin", "20px");
+    .attr("disabled", true);
+
+  const quarters = data.map((d) => d[0].quarter);
+
+  // Add labels to the timeline
+  const labelContainer = d3
+    .select("#labels2")
+    .selectAll(".timeline-label")
+    .data(quarters)
+    .enter()
+    .append("div")
+    .attr("class", "timeline-label")
+    .style("left", (d, i) => `${(i / (quarters.length - 1)) * 100}%`)
+    .text((d) => d);
 
   g.append("g")
     .attr("class", "x axis")
@@ -153,13 +214,13 @@ function initializeScene2(data, colorScale) {
 
 function initializeScene2Transition(data, colorScale) {
   const svg = d3.select("#scene2 svg");
-  const margin = { top: 20, right: 30, bottom: 40, left: 90 },
+  const margin = { top: 20, right: 30, bottom: 70, left: 90 },
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
   const g = svg.select("g");
 
-  const timeline = d3.select("#scene2 input[type='range']");
+  const timeline = d3.select("#timeline2");
 
   const x = d3.scaleLinear().range([0, width]);
 
@@ -184,7 +245,7 @@ function initializeScene2Transition(data, colorScale) {
       .attr("fill", (d) => colorScale(d.country))
       .merge(bars)
       .transition()
-      .duration(100)
+      .duration(1000)
       .attr("x", x(0))
       .attr("y", (d) => y(d.country))
       .attr("width", (d) => x(d.value))
@@ -195,7 +256,6 @@ function initializeScene2Transition(data, colorScale) {
 
     g.select(".x.axis").call(d3.axisBottom(x));
     g.select(".y.axis").call(d3.axisLeft(y));
-
     timeline.property("value", index);
   };
 
@@ -207,7 +267,7 @@ function initializeScene2Transition(data, colorScale) {
     } else {
       clearInterval(interval);
     }
-  }, 500);
+  }, 1000);
 }
 
 function initializeScene3(rhpiData, rpdiData, colorScale) {
@@ -216,24 +276,30 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
     .append("svg")
     .attr("width", 800)
     .attr("height", 600);
-  const margin = { top: 20, right: 30, bottom: 40, left: 90 },
+  const margin = { top: 20, right: 30, bottom: 70, left: 90 },
     width = 800 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
-
   const g = svg
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
   const timeline = d3
-    .select("#scene3")
-    .append("input")
-    .attr("type", "range")
-    .attr("min", 0)
+    .select("#timeline3")
     .attr("max", rhpiData.length - 1)
-    .attr("value", rhpiData.length - 1)
-    .attr("disabled", true)
-    .style("width", "80%")
     .style("margin", "20px");
+
+  const quarters = rhpiData.map((d) => d[0].quarter);
+
+  // Add labels to the timeline
+  const labelContainer = d3
+    .select("#labels3")
+    .selectAll(".timeline-label")
+    .data(quarters)
+    .enter()
+    .append("div")
+    .attr("class", "timeline-label")
+    .style("left", (d, i) => `${(i / (quarters.length - 1)) * 100}%`)
+    .text((d) => d);
 
   const data = rhpiData.map((d, i) => ({
     country: d.country,
@@ -247,14 +313,13 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
   const y = d3.scaleLinear().range([height, 0]);
 
   const updateScatterPlot = (index) => {
-    const currentData = data.filter(
-      (d) => d.quarter === rhpiData[index][0].quarter
-    );
+    const currentData = data.filter((d) => d.quarter === quarters[index]);
 
     x.domain([0, d3.max(currentData, (d) => d.RHPI)]);
     y.domain([0, d3.max(currentData, (d) => d.RPDI)]);
 
-    circles = g.selectAll(".circle").data(currentData, (d) => d.country);
+    const circles = g.selectAll(".circle").data(currentData, (d) => d.country);
+
     circles
       .enter()
       .append("circle")
@@ -265,7 +330,7 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
       .attr("fill", (d) => colorScale(d.country))
       .merge(circles)
       .transition()
-      .duration(100)
+      .duration(1000)
       .attr("cx", (d) => x(d.RHPI))
       .attr("cy", (d) => y(d.RPDI))
       .attr("r", 5)
@@ -285,15 +350,11 @@ function initializeScene3(rhpiData, rpdiData, colorScale) {
 
   g.append("g").attr("class", "y axis");
 
-  let index = rhpiData.length - 1;
-  const interval = setInterval(() => {
-    if (index >= 0) {
-      updateScatterPlot(index);
-      index--;
-    } else {
-      clearInterval(interval);
-    }
-  }, 100);
+  timeline.on("input", function () {
+    updateScatterPlot(this.value);
+  });
+
+  updateScatterPlot(rhpiData.length - 1);
 
   d3.select("#start-over").on("click", () => showScene("#scene1"));
 }
